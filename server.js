@@ -1,5 +1,6 @@
 const express=require('express');
 const logger=require('morgan');
+const cors=require('cors');
 
 const { androidRouter }=require('./routes/android');
 const { webRouter }=require('./routes/web');
@@ -11,6 +12,7 @@ const app=express();
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended:true }));
+app.use(cors());
 
 app.use('/android', androidRouter);
 app.use('/web', webRouter);
