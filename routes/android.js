@@ -31,23 +31,76 @@ androidRouter.post('/netinfo', (request, response)=>
 
             console.log(result);
         })
-
     }
 })
 
 androidRouter.post('/signup', function(request, response)
 {
-    // console.log(request.body);
-    // const { user }=request.body;
-    // const info=JSON.parse(user);
-    // console.log(info);
-    response.status(200).send({ code:200 })
+    const { user }=request.body;
+    const info=JSON.parse(user);
+    console.log(info);
+    const { contactNumber, email, name, password }=info;
+    const sqlQuery="select * from info where email = ?";
+    connection.query(sqlQuery,[email],(err, result)=>
+    {
+        if(err)
+        {
+            console.log(err);
+            response.status(500).send({ response_code:500 });
+        }
+        if(result.length>0)
+        {
+            response.status(409).send({ response_code:409 });
+        }
+        else
+        {
+            const uid = shortid.generate();
+            const sqlSignupQuery="insert into info(userid, name, email, number, password) values(?,?,?,?,?)";
+            connection.query(sqlSignupQuery,[uid, name, email, contactNumber, password],(err, result1)=>
+            {
+                if(err)
+                {
+                    console.log(err);
+                    response.status(500).send({ response_code:500 });
+                    return;
+                }
+                response.status(200).send({ response_code:200 })
+            })
+        }
+    })
 })
 
-androidRouter.get('/signup', function(request, response)
+
+androidRouter.post('/login',(request, response)=>
 {
-    response.status(200).send({ code:200 });
+    const { email, password }=request.body;
+    const sqlLoginQuery="select * from info where email = ?";
+    connection.query(sqlLoginQuery,[email],(err, result)=>
+    {
+        if(err)
+        {
+            console.log(err);
+            response.status(500).send({ response_code:500 })
+            return;
+        }
+        if(result.length>0)
+        {
+            if(result[0].password===password)
+            {
+                response.status(200).send({ response_code:200, result });
+            }
+            else
+            {
+                response.status(401).send({ response_code:401 });
+            }
+        }
+        else
+        {
+            response.status(404).send({ response_code:404 })
+        }
+    })
 })
+
 
 module.exports={
     androidRouter
