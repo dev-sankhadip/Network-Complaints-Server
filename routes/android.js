@@ -3,38 +3,6 @@ const shortid=require('shortid');
 
 const { connection }=require('../db/database');
 
-androidRouter.post('/netinfo', (request, response)=>
-{
-    console.log(request.body);
-    // let { address, latitude, logitude,sim_info }=request.body;
-    // const state=JSON.parse(address).mAdminArea;
-    // sim_info=JSON.parse(sim_info);
-    // for(let i=0;i<sim_info.length;i++)
-    // {
-    //     const id=shortid.generate();
-    //     net_info_arr = [];
-    //     net_info_arr.push(id);
-    //     net_info_arr.push(state);
-    //     net_info_arr.push(latitude);
-    //     net_info_arr.push(logitude);
-    //     net_info_arr.push(sim_info[i].cellType);
-    //     net_info_arr.push(sim_info[i].operatorName);
-    //     net_info_arr.push(sim_info[i].cellSignalStrength.mSignalStrength);
-    //     net_info_arr.push(sim_info[i].cellSignalStrength.mBitErrorRate);
-    //     net_info_arr.push(sim_info[i].cellSignalStrength.mTimingAdvance);
-    //     const sqlQuery="insert into netinfo(id, state, latitude, longitude, sim1opname, sim1nettype, sim1dbm, sim1asu, timingAdvance) values (?,?,?,?,?,?,?,?,?)";
-    //     connection.query(sqlQuery,net_info_arr,(err, result)=>
-    //     {
-    //         if(err)
-    //         {
-    //             console.log(err);
-    //         }
-
-    //         console.log(result);
-    //     })
-    // }
-})
-
 androidRouter.post('/signup', function(request, response)
 {
     const { user }=request.body;
@@ -102,6 +70,42 @@ androidRouter.post('/login',(request, response)=>
     })
 })
 
+androidRouter.post('/netinfo', (request, response)=>
+{
+    let { device_report, user_id }=request.body;
+    device_report=JSON.parse(device_report);
+    let { locationData:{ latitude, longitude }, simInfoList }=device_report;
+    const sqlNetinfoQuery="insert into netinfo(id, userid, latitude, longitude, asuLevel, strength, networkType, operatorName, submissionDate) values(?,?,?,?,?,?,?,?,?)";
+    simInfoList.map((sim)=>
+    {
+        const id=shortid.generate();
+        connection.query(sqlNetinfoQuery,[id, user_id, latitude, longitude, sim.asuLevel, sim.signalStrength, sim.networkType, sim.operatorName, new Date().toDateString()],(err, result)=>
+        {
+            if(err)
+            {
+                console.log(err);
+                response.status(500).send({ response_code:500 });
+            }
+        })
+    })
+    response.status(200).send({ response_code:200 });
+})
+
+androidRouter.post('/requests',(request, response)=>
+{
+    const { user_id }=request.body;
+    const sqlGetDataQuery="select * from netinfo where userid = ?";
+    connection.query(sqlGetDataQuery,[user_id],(err, result)=>
+    {
+        if(err)
+        {
+            console.log(err);
+            response.status(500).send({ response_code:500 });
+            return;
+        }
+        response.status(200).send({ result,response_code:200 });
+    })
+})
 
 module.exports={
     androidRouter
